@@ -45,29 +45,32 @@ pipeline {
         }
 
         stage('Deploy') {
-            steps {
-                sh 'docker build -t hd-devops-app:$APP_VERSION .'
-
-                sh '''
-                docker rm -f hd-devops-container || true
-                docker run -d --name hd-devops-container -p 3000:3000 hd-devops-app:$APP_VERSION
-                '''
-            }
+    steps {
+        sh '''
+           pkill -f "node server.js" || true
+           nohup npm start > app.log 2>&1 &
+            sleep 5
+            '''
+           }
         }
 
         stage('Release') {
-            steps {
-                sh 'echo "Application release version: $APP_VERSION"'
-            }
+    steps {
+        sh '''
+           echo "Application release version: $APP_VERSION"
+           echo "$APP_VERSION" > release-version.txt
+           '''
+          }
         }
 
         stage('Monitoring') {
-            steps {
-                sh '''
-                curl -f http://localhost:3000/health || exit 1
-                '''
-            }
+     steps {
+        sh '''
+          curl -f http://localhost:3000/health || exit 1
+          echo "Monitoring check passed: application health endpoint is available"
+          '''
         }
+      }
     }
 
     post {
